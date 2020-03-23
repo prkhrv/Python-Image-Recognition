@@ -1,62 +1,86 @@
-# import  
-from skimage.metrics import structural_similarity as ssim
-# from skimage import measure
-import matplotlib.pyplot as plt
-import numpy as np
 import cv2
-
-def mse(imageA, imageB):
-	# the 'Mean Squared Error' between the two images is the
-	# sum of the squared difference between the two images;
-	# NOTE: the two images must have the same dimension
-	err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
-	err /= float(imageA.shape[0] * imageA.shape[1])
-	
-	# return the MSE, the lower the error, the more "similar"
-	# the two images are
-	return err
+import numpy as np
+from PIL import Image, ImageChops 
+import math, operator, functools
 
 
-def compare_images(imageA, imageB, title):
-	# compute the mean squared error and structural similarity
-	# index for the images
-	m = mse(imageA, imageB)
-	s = ssim(imageA, imageB)
-	# setup the figure
-	fig = plt.figure(title)
-	plt.suptitle("MSE: %.2f, SSIM: %.2f" % (m, s))
-	# show first image
-	ax = fig.add_subplot(1, 2, 1)
-	plt.imshow(imageA, cmap = plt.cm.gray)
-	plt.axis("off")
-	# show the second image
-	ax = fig.add_subplot(1, 2, 2)
-	plt.imshow(imageB, cmap = plt.cm.gray)
-	plt.axis("off")
-	# show the images
-	plt.show()
-
-# load the images -- the original, the original + contrast,
-# and the original + photoshop
-original = cv2.imread("images/jp_gates_original.png")
-contrast = cv2.imread("images/jp_gates_contrast.png")
-shopped = cv2.imread("images/jp_gates_photoshopped.png")
-
-img1 = cv2.imread("images/img1.jpeg")
-img2 = cv2.imread("images/img2.jpeg")
+img1_path = "images/img1.jpeg"
+img2_path = "images/img2.jpeg"
 
 
-# convert the images to grayscale
-original = cv2.cvtColor(original, cv2.COLOR_BGR2GRAY)
-contrast = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY)
-shopped = cv2.cvtColor(shopped, cv2.COLOR_BGR2GRAY)
 
-img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+def compare_images(imageA_path,imageB_path):
+    #CV2
+    imageA = cv2.imread(imageA_path)
+    imageB = cv2.imread(imageB_path)
 
-# compare the images
-# compare_images(original, original, "Original vs. Original")
-# compare_images(original, contrast, "Original vs. Contrast")
-# compare_images(original, shopped, "Original vs. Photoshopped")
+    #PIL
+    img1 = Image.open(imageA_path)
+    img2 = Image.open(imageB_path)
 
-compare_images(img1,img2,"abc vs bcd")
+    # 1) Comparison by CV2 
+    if imageA.shape == imageB.shape:
+        print("same shape and channels")
+        difference = cv2.subtract(imageA,imageB)
+        b,g,r = cv2.split(difference)
+
+        if cv2.countNonZero(b) == 0 and cv2.countNonZero(g) == 0 and cv2.countNonZero(r) == 0:
+            print("Images are completely equal")
+            return 0.0
+        else:
+            print("images are different")
+            return rmsdiff(img1,img2)
+    else:
+        print("images are different")
+        return rmsdiff(img1,img2)
+
+        
+
+# 2) Comparison by ImageChops
+def rmsdiff(im1, im2):
+
+    diff = ImageChops.difference(im1, im2)
+    h = diff.histogram()
+
+    rms = math.sqrt(functools.reduce(operator.add,
+        map(lambda h, i: h*(i**2), h, range(256))
+    ) / (float(im1.size[0]) * im1.size[1]))
+
+    # calculate rms
+    return rms
+
+
+ans = compare_images(img1_path,img2_path)
+print(ans)
+
+
+
+
+
+
+
+
+
+
+# PATENT CODE 
+# def similar_images(imageA,imageB):
+#     sift = cv2.xfeatures2d.SIFT_create()
+#     kp_1, desc_1 = sift.detectAndCompute(imageA, None)
+#     kp_2, desc_2 = sift.detectAndCompute(imageB, None)
+
+#     index_params = dict(algorithm=0, trees=5)
+#     search_params = dict()
+#     flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+#     matches = flann.knnMatch(desc_1, desc_2, k=2)
+
+#     good_points = []
+#     ratio = 0.6
+#     for m, n in matches:
+#         if m.distance < ratio*n.distance:
+#             good_points.append(m)
+#     print(len(good_points))
+#     result = cv2.drawMatches(imageA, kp_1, imageB, kp_2, good_points, None)
+
+
+
