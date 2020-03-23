@@ -1,37 +1,47 @@
 import cv2
 from PIL import Image, ImageChops 
 import math, operator, functools
+import getimage
+
+import requests
+from io import BytesIO
+
+net_img1 = "https://rukminim1.flixcart.com/image/800/800/shapewear/z/u/b/mcbl-dermawear-26-original-imae7rrghqzgjyfv.jpeg?q=90"
+net_img2 = "https://rukminim1.flixcart.com/image/800/800/shapewear/u/w/g/trbl-dermawear-30-original-imae7rrgh5a4bzzg.jpeg?q=90"
+net_img3 = "https://rukminim1.flixcart.com/image/800/800/shapewear/u/w/g/trbl-dermawear-30-original-imae7rrgh5a4bzzg.jpeg?q=90"
 
 
-img1_path = "images/img1.jpeg"
-img2_path = "images/img2.jpeg"
-
-
+# response_a = requests.get(net_img1)
+# response_b = requests.get(net_img2)
+# img1 = Image.open(BytesIO(response_a.content))
+# img2 = Image.open(BytesIO(response_b.content))
 
 def compare_images(imageA_path,imageB_path):
+
+	response_a = requests.get(imageA_path)
+	response_b = requests.get(imageB_path)
     #CV2
-    imageA = cv2.imread(imageA_path)
-    imageB = cv2.imread(imageB_path)
+	imageA = getimage.url_to_image(imageA_path)
+	imageB = getimage.url_to_image(imageB_path)
 
     #PIL
-    img1 = Image.open(imageA_path)
-    img2 = Image.open(imageB_path)
+	img1 = Image.open(BytesIO(response_a.content))
+	img2 = Image.open(BytesIO(response_b.content))
 
     # 1) Comparison by CV2 
-    if imageA.shape == imageB.shape:
-        print("same shape and channels")
-        difference = cv2.subtract(imageA,imageB)
-        b,g,r = cv2.split(difference)
-
-        if cv2.countNonZero(b) == 0 and cv2.countNonZero(g) == 0 and cv2.countNonZero(r) == 0:
-            print("Images are completely equal")
-            return 0.0
-        else:
-            print("images are different")
-            return rmsdiff(img1,img2)
-    else:
-        print("images are different")
-        return rmsdiff(img1,img2)
+	if imageA.shape == imageB.shape:
+		print("same shape and channels")
+		difference = cv2.subtract(imageA,imageB)
+		b,g,r = cv2.split(difference)
+		if cv2.countNonZero(b) == 0 and cv2.countNonZero(g) == 0 and cv2.countNonZero(r) == 0:
+			print("Images are completely equal")
+			return 0.0
+		else:
+			print("images are different")
+			return rmsdiff(img1,img2)
+	else:
+		print("images are different")
+		return rmsdiff(img1,img2)
 
         
 
@@ -49,7 +59,7 @@ def rmsdiff(im1, im2):
     return rms
 
 
-ans = compare_images(img1_path,img2_path)
+ans = compare_images(net_img3,net_img2)
 print(ans)
 
 
